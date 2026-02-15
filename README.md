@@ -1,6 +1,6 @@
 # 🚀 Tiny GPT From Scratch
 
-A decoder-only Transformer (GPT-style) built completely from scratch using **PyTorch** — without pre-trained weights or HuggingFace Trainer.
+A decoder-only Transformer (GPT-style) built completely from scratch using **PyTorch** without pre-trained weights or HuggingFace Trainer.
 
 This project focuses on understanding how GPT models work internally by implementing every core component manually.
 
@@ -29,7 +29,7 @@ The model includes:
 ## 📊 Dataset
 
 - Structured conversational dataset
-- ~300–500 dialogue pairs
+- 300–500 dialogue pairs
 - CSV format
 
 Due to limited dataset size, overfitting was observed during training.
@@ -40,9 +40,9 @@ Due to limited dataset size, overfitting was observed during training.
 
 | Metric | Value |
 |--------|--------|
-| Initial Training Loss | ~4.1 |
-| Final Training Loss | ~2.4–2.8 |
-| Validation Loss | ~3.0–3.5 |
+| Initial Training Loss | 4.1 |
+| Final Training Loss | 2.4–2.8 |
+| Validation Loss |3.0–3.5 |
 
 ### Observations
 - Clear overfitting on small dataset
