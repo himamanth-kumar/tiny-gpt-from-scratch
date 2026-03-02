@@ -1,3 +1,4 @@
+from numpy import indices
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -112,9 +113,10 @@ class TinyGPT(nn.Module):
             logits, _ = self(idx_cond)
 
             logits = logits[:, -1, :] / temperature
-            probs = F.softmax(logits, dim=-1)
-
-            next_idx = torch.multinomial(probs, 1)
+            top_k = 20
+            values, indices = torch.topk(logits, top_k)
+            probs = F.softmax(values, dim=-1)
+            next_idx = indices.gather(-1, torch.multinomial(probs, 1))
             idx = torch.cat((idx, next_idx), dim=1)
 
             if end_token_id is not None:
