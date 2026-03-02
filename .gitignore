@@ -38,3 +38,8 @@ dist/
 build/
 clean_text.txt
 tokenizer.*
+
+
+*.pt
+*.pth
+*.ckpt
