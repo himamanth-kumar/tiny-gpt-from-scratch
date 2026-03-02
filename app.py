@@ -1,17 +1,39 @@
 import streamlit as st
 import torch
+import sentencepiece as spm
+
 from model import TinyGPT
 from config import config
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-checkpoint = torch.load("tinygpt_chat.pth", map_location=device)
-word2idx = checkpoint["word2idx"]
-idx2word = checkpoint["idx2word"]
+# -------------------------
+# Load Model
+# -------------------------
 
-model = TinyGPT(len(word2idx), config).to(device)
+checkpoint = torch.load("tinygpt_chat.pth", map_location=device)
+
+# Load tokenizer
+sp = spm.SentencePieceProcessor()
+import os
+
+tokenizer_path = checkpoint["tokenizer_model"]
+
+if not os.path.exists(tokenizer_path):
+    st.error(f"Tokenizer not found at {tokenizer_path}")
+    st.stop()
+
+sp.load(tokenizer_path)
+
+vocab_size = sp.get_piece_size()
+
+model = TinyGPT(vocab_size, config).to(device)
 model.load_state_dict(checkpoint["model"])
 model.eval()
+
+# -------------------------
+# Streamlit UI
+# -------------------------
 
 st.set_page_config(page_title="TinyGPT Chatbot")
 st.title("MyLLM Bot")
@@ -25,35 +47,43 @@ for message in st.session_state.messages:
 
 prompt = st.chat_input("Say something...")
 
+# -------------------------
+# Inference
+# -------------------------
+
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
 
+    # Format same as training
     prompt_text = f"User: {prompt} Bot:"
-    words = [w for w in prompt_text.split() if w in word2idx]
 
-    if len(words) == 0:
-        response = "I don't understand."
-    else:
-        idx = torch.tensor([[word2idx[w] for w in words]], dtype=torch.long).to(device)
-        end_id = word2idx["<END>"]
+    # Encode using SentencePiece
+    input_ids = sp.encode(prompt_text, out_type=int)
+    idx = torch.tensor([input_ids], dtype=torch.long).to(device)
 
-        with torch.no_grad():
-            output = model.generate(
-                idx,
-                max_new_tokens=30,
-                end_token_id=end_id,
-                temperature=0.8
-            )
+    end_token_id = sp.piece_to_id("<END>")
 
-        decoded = [idx2word[int(i)] for i in output[0]]
-        generated = decoded[len(words):]
+    with torch.no_grad():
+        output = model.generate(
+            idx,
+            max_new_tokens=40,
+            end_token_id=end_token_id,
+            temperature=0.6
+        )
 
-        if "<END>" in generated:
-            generated = generated[:generated.index("<END>")]
+    # Decode output
+    decoded_text = sp.decode(output[0].tolist())
 
-        response = " ".join(generated)
+    # Remove prompt part
+    response = decoded_text.replace(prompt_text, "")
+
+    # Stop at <END>
+    if "<END>" in response:
+        response = response.split("<END>")[0]
+
+    response = response.strip()
 
     with st.chat_message("assistant"):
         st.write(response)
